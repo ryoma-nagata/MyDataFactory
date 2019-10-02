@@ -1,0 +1,16 @@
+{
+	"name": "TableList",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "yourlinkedSQLDW",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "CopyAllTable"
+		},
+		"annotations": [],
+		"type": "AzureSqlDWTable",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
