@@ -1,0 +1,94 @@
+{
+	"name": "resume-up-down-pause",
+	"properties": {
+		"activities": [
+			{
+				"name": "call-resume",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "ResumeAzureSQLDW",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "call-pause",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "call-scaledown",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PauseAzureSQLDW",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "call-scaleup",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "call-resume",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "ScaleAzureSQLDW",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"scale": {
+							"value": "@pipeline().parameters.DWU",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "call-scaledown",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "call-scaleup",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "ScaleAzureSQLDW",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			}
+		],
+		"parameters": {
+			"DWU": {
+				"type": "string",
+				"defaultValue": "DW200c"
+			}
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

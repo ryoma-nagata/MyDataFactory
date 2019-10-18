@@ -1,0 +1,151 @@
+{
+	"name": "ScaleAzureSQLDW",
+	"properties": {
+		"activities": [
+			{
+				"name": "IfSqlDwNotPaused",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "CheckIfSqlDwPaused",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals('Online',string(activity('CheckIfSqlDwPaused').output.properties.status))",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "ScaleSqlDw",
+							"type": "WebActivity",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"url": {
+									"value": "@concat('https://management.azure.com/subscriptions/',pipeline().parameters.SubscriptionID,'/resourceGroups/',pipeline().parameters.ResourceGroup,'/providers/Microsoft.Sql/servers/',pipeline().parameters.Server,'/databases/',pipeline().parameters.DW,'?api-version=2014-04-01')",
+									"type": "Expression"
+								},
+								"method": "PATCH",
+								"headers": {
+									"Content-Type": "application/json"
+								},
+								"body": {
+									"value": "{ \"properties\": {\"requestedServiceObjectiveName\": \"@{pipeline().parameters.scale}\" }}",
+									"type": "Expression"
+								},
+								"authentication": {
+									"type": "MSI",
+									"resource": "https://management.core.windows.net/"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "CheckIfSqlDwPaused",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "@concat('https://management.azure.com/subscriptions/',pipeline().parameters.SubscriptionID,'/resourceGroups/',pipeline().parameters.ResourceGroup,'/providers/Microsoft.Sql/servers/',pipeline().parameters.Server,'/databases/',pipeline().parameters.DW,'?api-version=2014-04-01')",
+						"type": "Expression"
+					},
+					"method": "GET",
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://management.core.windows.net/"
+					}
+				}
+			},
+			{
+				"name": "UntilSqlDwScaling",
+				"type": "Until",
+				"dependsOn": [
+					{
+						"activity": "IfSqlDwNotPaused",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals('Online',string(activity('CheckSqlDwStatus').output.properties.status))",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "CheckSqlDwStatus",
+							"type": "WebActivity",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"url": {
+									"value": "@concat('https://management.azure.com/subscriptions/',pipeline().parameters.SubscriptionID,'/resourceGroups/',pipeline().parameters.ResourceGroup,'/providers/Microsoft.Sql/servers/',pipeline().parameters.Server,'/databases/',pipeline().parameters.DW,'?api-version=2014-04-01')",
+									"type": "Expression"
+								},
+								"method": "GET",
+								"authentication": {
+									"type": "MSI",
+									"resource": "https://management.core.windows.net/"
+								}
+							}
+						}
+					],
+					"timeout": "7.00:00:00"
+				}
+			}
+		],
+		"parameters": {
+			"SubscriptionID": {
+				"type": "String",
+				"defaultValue": ""
+			},
+			"ResourceGroup": {
+				"type": "String",
+				"defaultValue": ""
+			},
+			"Server": {
+				"type": "String",
+				"defaultValue": ""
+			},
+			"DW": {
+				"type": "String",
+				"defaultValue": ""
+			},
+			"scale": {
+				"type": "string",
+				"defaultValue": "DW100c"
+			}
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
