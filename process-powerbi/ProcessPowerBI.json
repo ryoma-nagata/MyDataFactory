@@ -191,7 +191,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"expression": {
-						"value": "@equals(activity('FilterToCurrentRefresh').output.value[0].status,'failed')",
+						"value": "@equals(activity('FilterToCurrentRefresh').output.value[0].status,'Failed')",
 						"type": "Expression"
 					},
 					"ifTrueActivities": [
